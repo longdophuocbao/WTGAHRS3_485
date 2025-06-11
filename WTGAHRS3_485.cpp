@@ -9,9 +9,11 @@ const uint16_t BANDWIDTH_REGISTER_ADDRESS = 0x001F;
 const uint16_t ACCELERATION_BASE_REGISTER = 0x0034;
 const uint16_t ANGULAR_VELOCITY_BASE_REGISTER = 0x0037;
 const uint16_t MAGNETIC_FIELD_BASE_REGISTER = 0x003A;
+const uint16_t ATTITUDE_BASE_REGISTER = 0x003D;
 const uint16_t GPS_MOTION_BASE_REGISTER = 0x004D;
 const uint16_t KEY_REGISTER_ADDRESS = 0x0069;
 const uint16_t MODDELAY_REGISTER_ADDRESS = 0x0074;
+const uint16_t GPS_COORD_BASE_REGISTER = 0x0075;
 
 // Hằng số tỉ lệ và giá trị đặc biệt
 const float GRAVITATIONAL_ACCELERATION = 9.8f;
@@ -58,6 +60,69 @@ GpsMotionData WTGAHRS3_485::getGpsMotionData()
     motionData.isDataValid = true;
   }
   return motionData;
+}
+
+GpsCoordinates WTGAHRS3_485::getGpsCoordinates()
+{
+  GpsCoordinates coords;
+  coords.isDataValid = false;
+
+  // --- CÁC THÔNG TIN NÀY CẦN BẠN CUNG CẤP ---
+   
+  const uint8_t NUM_REGISTERS_TO_READ = 4;         // (2 cho Lat, 2 cho Lon)
+  const double SCALING_FACTOR = 10000000.0;        // <-- VÍ DỤ, CẦN HỆ SỐ THỰC
+
+  uint8_t result = _node.readHoldingRegisters(GPS_COORD_BASE_REGISTER, NUM_REGISTERS_TO_READ);
+
+  if (result == _node.ku8MBSuccess)
+  {
+    // Giả sử thứ tự là: Lon_High, Lon_Low, Lat_High, Lat_Low
+    uint16_t lon_high = _node.getResponseBuffer(0);
+    uint16_t lon_low = _node.getResponseBuffer(1);
+    uint16_t lat_high = _node.getResponseBuffer(2);
+    uint16_t lat_low = _node.getResponseBuffer(3);
+
+    // Ghép các thanh ghi 16-bit thành giá trị 32-bit có dấu
+    int32_t raw_lon = (static_cast<int32_t>(lon_high) << 16) | lon_low;
+    int32_t raw_lat = (static_cast<int32_t>(lat_high) << 16) | lat_low;
+
+    // Áp dụng công thức chuyển đổi
+    coords.longitude = static_cast<double>(raw_lon) / SCALING_FACTOR;
+    coords.latitude = static_cast<double>(raw_lat) / SCALING_FACTOR;
+
+    coords.isDataValid = true;
+  }
+
+  return coords;
+}
+
+AttitudeData WTGAHRS3_485::getAttitudeValues()
+{
+  AttitudeData attitude;
+  attitude.isDataValid = false;
+
+  
+  const uint8_t NUM_REGISTERS_TO_READ = 3;        // (1 cho Roll, 1 cho Pitch, 1 cho Yaw)
+  const double SCALING_FACTOR = 100.0;           
+
+  uint8_t result = _node.readHoldingRegisters(ATTITUDE_BASE_REGISTER, NUM_REGISTERS_TO_READ);
+
+  if (result == _node.ku8MBSuccess)
+  {
+    // Giả sử thứ tự là: Roll, Pitch, Yaw
+    int16_t raw_roll = static_cast<int16_t>(_node.getResponseBuffer(0));
+    int16_t raw_pitch = static_cast<int16_t>(_node.getResponseBuffer(1));
+    int16_t raw_yaw = static_cast<int16_t>(_node.getResponseBuffer(2));
+
+    // Áp dụng công thức chuyển đổi
+    attitude.roll = static_cast<float>(raw_roll) / SCALING_FACTOR;
+    attitude.pitch = static_cast<float>(raw_pitch) / SCALING_FACTOR;
+    attitude.yaw = static_cast<float>(raw_yaw) / SCALING_FACTOR;
+
+    attitude.isDataValid = true;
+  }
+
+  return attitude;
 }
 
 AccelerationData WTGAHRS3_485::getAccelerationData()

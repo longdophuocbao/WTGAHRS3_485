@@ -14,6 +14,21 @@ struct GpsMotionData
   bool isDataValid;
 };
 
+struct GpsCoordinates
+{
+  double latitude;  // Vĩ độ
+  double longitude; // Kinh độ
+  bool isDataValid;
+};
+
+struct AttitudeData
+{
+  float roll;  // Góc xoay quanh trục X
+  float pitch; // Góc xoay quanh trục Y
+  float yaw;   // Góc xoay quanh trục Z
+  bool isDataValid;
+};
+
 struct AccelerationData
 {
   float accelX;
@@ -90,6 +105,8 @@ public:
 
   // --- CÁC HÀM ĐỌC DỮ LIỆU CẢM BIẾN ---
   GpsMotionData getGpsMotionData();
+  GpsCoordinates getGpsCoordinates();
+  AttitudeData getAttitudeValues();
   AccelerationData getAccelerationData();
   AngularVelocityData getAngularVelocityData();
   MagneticFieldData getMagneticFieldData();

@@ -21,7 +21,6 @@ WTGAHRS3_485 sensor(node);
 // Define the slave ID for your sensor
 #define SENSOR_SLAVE_ID 0x50
 
-
 void setup()
 {
   Serial.begin(115200);
@@ -44,17 +43,35 @@ void setup()
 
 void loop()
 {
+  // -- -Read Attitude Data(Roll, Pitch, Yaw)-- -
+
+  AttitudeData attitude = sensor.getAttitudeValues();
+  if (attitude.isDataValid)
+  {
+    Serial.print("Attitude (°):  ");
+    Serial.print("Roll=");
+    Serial.print(attitude.roll, 2);
+    Serial.print(", Pitch=");
+    Serial.print(attitude.pitch, 2);
+    Serial.print(", Yaw=");
+    Serial.println(attitude.yaw, 2);
+  }
+  else
+  {
+    Serial.println("Failed to read attitude data.");
+  }
+
   // --- Read Acceleration ---
   AccelerationData accel = sensor.getAccelerationData();
   if (accel.isDataValid)
   {
     Serial.print("Accel (m/s^2): ");
     Serial.print("X=");
-    Serial.print(accel.accelX, 4);
+    Serial.print(accel.accelX);
     Serial.print(", Y=");
-    Serial.print(accel.accelY, 4);
+    Serial.print(accel.accelY);
     Serial.print(", Z=");
-    Serial.println(accel.accelZ, 4);
+    Serial.println(accel.accelZ);
   }
   else
   {
@@ -110,6 +127,20 @@ void loop()
   else
   {
     Serial.println("Failed to read GPS motion data.");
+  }
+
+  GpsCoordinates coords = sensor.getGpsCoordinates();
+  if (coords.isDataValid)
+  {
+    Serial.print("GPS Coords:    ");
+    Serial.print("Lat=");
+    Serial.print(coords.latitude, 7); // In với 7 chữ số thập phân cho độ chính xác cao
+    Serial.print(", Lon=");
+    Serial.println(coords.longitude, 7);
+  }
+  else
+  {
+    Serial.println("Failed to read GPS coordinates.");
   }
 
   Serial.println("------------------------------------");
