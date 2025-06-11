@@ -27,16 +27,11 @@ void setup()
   delay(500); // Wait for Serial to initialize
   RS485.begin(115200, SERIAL_8N1, RXD2, TXD2);
   delay(500); // Wait for RS485 to initialize
-  // Serial2.begin(115200, SERIAL_8N1, RXD2, TXD2); // RXD2 and TXD2 are the pins for RS485 communication
-  // Modbus communication runs at 115200 baud
+
   // Node uses Serial (UART0)
   node.begin(SENSOR_SLAVE_ID, RS485);
   delay(500); // Wait for ModbusMaster to initialize)
 
-  // If you are using RS485, you might need to set the transmission
-  // control pins. Attach them to the ModbusMaster object.
-  // node.preTransmission(preTransmission);
-  // node.postTransmission(postTransmission);
 
   Serial.println("WTGAHRS3 485 - Read All Data Example");
 }

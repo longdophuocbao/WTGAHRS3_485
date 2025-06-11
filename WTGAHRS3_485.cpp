@@ -6,6 +6,7 @@ const uint16_t SAVE_REGISTER_ADDRESS = 0x0000;
 const uint16_t CALSW_REGISTER_ADDRESS = 0x0001;
 const uint16_t AXOFFSET_ADDR = 0x0005;
 const uint16_t BANDWIDTH_REGISTER_ADDRESS = 0x001F;
+const uint16_t ON_TIME_CHIP_REGISTER_ADDRESS = 0x0030;
 const uint16_t ACCELERATION_BASE_REGISTER = 0x0034;
 const uint16_t ANGULAR_VELOCITY_BASE_REGISTER = 0x0037;
 const uint16_t MAGNETIC_FIELD_BASE_REGISTER = 0x003A;
@@ -38,6 +39,67 @@ bool WTGAHRS3_485::sendSystemCommand(SystemCommand cmd)
 {
   uint8_t result = _node.writeSingleRegister(SAVE_REGISTER_ADDRESS, static_cast<uint16_t>(cmd));
   return (result == _node.ku8MBSuccess);
+}
+
+OnChipTime WTGAHRS3_485::getOnChipTime()
+{
+  OnChipTime currentTime = {0};
+  currentTime.isDataValid = false;
+
+  const uint8_t NUM_TIME_REGISTERS = 4;
+  // Địa chỉ bắt đầu của khối thời gian là 0x30
+  uint8_t result = _node.readHoldingRegisters(ON_TIME_CHIP_REGISTER_ADDRESS, NUM_TIME_REGISTERS);
+
+  if (result == _node.ku8MBSuccess)
+  {
+    // Tách dữ liệu từ các thanh ghi đã đọc
+    uint16_t yymm = _node.getResponseBuffer(0);
+    uint16_t ddhh = _node.getResponseBuffer(1);
+    uint16_t mmss = _node.getResponseBuffer(2);
+    uint16_t ms = _node.getResponseBuffer(3);
+
+    // Byte thấp là Năm, byte cao là Tháng
+    currentTime.year = yymm & 0xFF;
+    currentTime.month = yymm >> 8;
+
+    // Byte thấp là Ngày, byte cao là Giờ
+    currentTime.day = ddhh & 0xFF;
+    currentTime.hour = ddhh >> 8;
+
+    // Byte thấp là Phút, byte cao là Giây
+    currentTime.minute = mmss & 0xFF;
+    currentTime.second = mmss >> 8;
+
+    currentTime.millisecond = ms;
+
+    currentTime.isDataValid = true;
+  }
+  return currentTime;
+}
+
+bool WTGAHRS3_485::setOnChipTime(const OnChipTime &newTime)
+{
+  // Bước 1: Mở khóa thiết bị
+  if (!unlockRegisters())
+  {
+    // Serial.println("Mở khóa thất bại. Hủy thao tác cài đặt thời gian.");
+    return false;
+  }
+
+  // Bước 2: Đóng gói dữ liệu vào các biến 16-bit
+  uint16_t yymm = (newTime.month << 8) | newTime.year;
+  uint16_t ddhh = (newTime.hour << 8) | newTime.day;
+  uint16_t mmss = (newTime.second << 8) | newTime.minute;
+  uint16_t ms = newTime.millisecond;
+
+  // Bước 3: Ghi lần lượt từng thanh ghi
+  bool success = true;
+  success &= (_node.writeSingleRegister(0x30, yymm) == _node.ku8MBSuccess);
+  success &= (_node.writeSingleRegister(0x31, ddhh) == _node.ku8MBSuccess);
+  success &= (_node.writeSingleRegister(0x32, mmss) == _node.ku8MBSuccess);
+  success &= (_node.writeSingleRegister(0x33, ms) == _node.ku8MBSuccess);
+
+  return success;
 }
 
 // --- CÁC HÀM ĐỌC DỮ LIỆU CẢM BIẾN ---
