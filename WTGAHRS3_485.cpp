@@ -274,16 +274,14 @@ bool WTGAHRS3_485::setBandwidth(SensorBandwidth bwValue)
   return false;
 }
 
-SensorBandwidth WTGAHRS3_485::getBandwidth(bool &isValid)
+SensorBandwidth WTGAHRS3_485::getBandwidth()
 {
-  isValid = false;
   uint8_t result = _node.readHoldingRegisters(BANDWIDTH_REGISTER_ADDRESS, 1);
   if (result == _node.ku8MBSuccess)
   {
-    isValid = true;
     return static_cast<SensorBandwidth>(_node.getResponseBuffer(0));
   }
-  return BW_256_HZ; // Giá trị mặc định khi lỗi
+  return 0; // Giá trị mặc định khi lỗi
 }
 
 bool WTGAHRS3_485::setDataResponseDelay(uint16_t delay_us)

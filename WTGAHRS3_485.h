@@ -128,7 +128,7 @@ public:
   uint16_t getCalibrationSwitchStatus(bool &isValid);
 
   bool setBandwidth(SensorBandwidth bwValue);
-  SensorBandwidth getBandwidth(bool &isValid);
+  SensorBandwidth getBandwidth();
 
   bool setDataResponseDelay(uint16_t delay_us);
   uint16_t getDataResponseDelay(bool &isValid);
