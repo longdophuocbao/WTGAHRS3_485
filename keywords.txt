@@ -1,0 +1,63 @@
+#######################################
+# Syntax Highlighting for WTGAHRS3_485
+#######################################
+
+#######################################
+# Class (KEYWORD1)
+#######################################
+WTGAHRS3_485	KEYWORD1
+
+#######################################
+# Methods (KEYWORD2)
+#######################################
+getGpsMotionData	KEYWORD2
+getAccelerationData	KEYWORD2
+getAngularVelocityData	KEYWORD2
+getMagneticFieldData	KEYWORD2
+setCalibrationCommand	KEYWORD2
+getCalibrationSwitchStatus	KEYWORD2
+setBandwidth	KEYWORD2
+getBandwidth	KEYWORD2
+setDataResponseDelay	KEYWORD2
+getDataResponseDelay	KEYWORD2
+setAccelOffset	KEYWORD2
+setGyroOffset	KEYWORD2
+setMagOffset	KEYWORD2
+getAllSensorOffsets	KEYWORD2
+writeAllSensorOffsets	KEYWORD2
+saveConfiguration	KEYWORD2
+rebootDevice	KEYWORD2
+resetConfiguration	KEYWORD2
+bandwidthToString	KEYWORD2
+
+#######################################
+# Structs & Enums (KEYWORD2 / LITERAL1)
+#######################################
+GpsMotionData	KEYWORD2
+AccelerationData	KEYWORD2
+AngularVelocityData	KEYWORD2
+MagneticFieldData	KEYWORD2
+SensorOffsets	KEYWORD2
+CalibrationCommand	KEYWORD2
+SensorBandwidth	KEYWORD2
+SystemCommand	KEYWORD2
+
+NORMAL_WORKING_MODE	LITERAL1
+AUTO_ADDER_CALIBRATION	LITERAL1
+HEIGHT_RESET	LITERAL1
+SET_HEADING_ANGLE_TO_ZERO	LITERAL1
+MAG_CAL_SPHERICAL_FITTING	LITERAL1
+SET_ANGLE_REFERENCE	LITERAL1
+MAG_CAL_DUAL_PLANE_MODE	LITERAL1
+
+BW_256_HZ	LITERAL1
+BW_188_HZ	LITERAL1
+BW_98_HZ	LITERAL1
+BW_42_HZ	LITERAL1
+BW_20_HZ	LITERAL1
+BW_10_HZ	LITERAL1
+BW_5_HZ	LITERAL1
+
+CMD_SAVE_CONFIG	LITERAL1
+CMD_REBOOT_DEVICE	LITERAL1
+CMD_RESET_CONFIG	LITERAL1
