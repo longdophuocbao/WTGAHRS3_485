@@ -21,6 +21,15 @@ struct GpsCoordinates
   bool isDataValid;
 };
 
+struct GpsAccuracyData
+{
+  uint16_t numSatellites; // Số lượng vệ tinh
+  float pdop;             // Position Dilution of Precision (càng thấp càng tốt)
+  float hdop;             // Horizontal Dilution of Precision (càng thấp càng tốt)
+  float vdop;             // Vertical Dilution of Precision (càng thấp càng tốt)
+  bool isDataValid;
+};
+
 struct AttitudeData
 {
   float roll;  // Góc xoay quanh trục X
@@ -117,9 +126,13 @@ struct SynchronizedSensorData
   AttitudeData attitude;
   MagneticFieldData mag; // Được đọc cùng khối IMU
   GpsCoordinates gpsCoordinates;
+  GpsMotionData gpsMotion;     // Dữ liệu chuyển động GPS
+  GpsAccuracyData gpsAccuracy; // Dữ liệu độ chính xác GPS
 
   bool isImuDataValid;    // Cờ cho time, accel, gyro, attitude, mag
   bool isGpsCoordValid; // Cờ cho gpsCoordinates
+  bool isGpsMotionValid;  // Cờ cho gpsMotion
+  bool isGpsAccuracyValid;// Cờ cho gpsAccuracy
 };
 
 // --- LỚP THƯ VIỆN CHÍNH ---
@@ -132,6 +145,7 @@ public:
   // --- CÁC HÀM ĐỌC DỮ LIỆU CẢM BIẾN ---
   GpsMotionData getGpsMotionData();
   GpsCoordinates getGpsCoordinates();
+  GpsAccuracyData getGpsAccuracy();
   AttitudeData getAttitudeValues();
   AccelerationData getAccelerationData();
   AngularVelocityData getAngularVelocityData();
