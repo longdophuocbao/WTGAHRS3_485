@@ -241,7 +241,14 @@ MagneticFieldData WTGAHRS3_485::getMagneticFieldData()
   return magData;
 }
 
-// --- CÁC HÀM CẤU HÌNH VÀ ĐIỀU KHIỂN ---
+/* --- CÁC HÀM CẤU HÌNH VÀ ĐIỀU KHIỂN ---
+    NORMAL_WORKING_MODE = 0x0000,
+    AUTO_ADDER_CALIBRATION = 0x0001,
+    HEIGHT_RESET = 0x0003,
+    SET_HEADING_ANGLE_TO_ZERO = 0x0004,
+    MAG_CAL_SPHERICAL_FITTING = 0x0007,
+    SET_ANGLE_REFERENCE = 0x0008,
+    MAG_CAL_DUAL_PLANE_MODE = 0x0009 */
 bool WTGAHRS3_485::setCalibrationCommand(CalibrationCommand command)
 {
   if (unlockRegisters())
@@ -281,7 +288,7 @@ SensorBandwidth WTGAHRS3_485::getBandwidth()
   {
     return static_cast<SensorBandwidth>(_node.getResponseBuffer(0));
   }
-  return 0; // Giá trị mặc định khi lỗi
+  return BW_256_HZ; // Giá trị mặc định khi lỗi
 }
 
 bool WTGAHRS3_485::setDataResponseDelay(uint16_t delay_us)
@@ -426,4 +433,93 @@ String WTGAHRS3_485::bandwidthToString(SensorBandwidth bw)
   default:
     return "Unknown";
   }
+}
+
+// --- HÀM ĐỌC DỮ LIỆU ĐỒNG BỘ ---
+SynchronizedSensorData WTGAHRS3_485::getSynchronizedData()
+{
+  SynchronizedSensorData syncData;
+  syncData.isImuDataValid = false;
+  syncData.isGpsCoordValid = false;
+
+  // --- Đọc khối dữ liệu IMU (Time, Accel, Gyro, Mag, Attitude) ---
+  // Địa chỉ bắt đầu: ON_TIME_CHIP_REGISTER_ADDRESS (0x0030)
+  // Số lượng thanh ghi: 16 (từ 0x30 đến 0x3F)
+  const uint8_t NUM_IMU_BLOCK_REGISTERS = 16;
+  uint8_t resultImu = _node.readHoldingRegisters(ON_TIME_CHIP_REGISTER_ADDRESS, NUM_IMU_BLOCK_REGISTERS);
+
+  if (resultImu == _node.ku8MBSuccess)
+  {
+    // Phân tích dữ liệu Thời gian (4 words, offset 0)
+    uint16_t yymm = _node.getResponseBuffer(0);
+    uint16_t ddhh = _node.getResponseBuffer(1);
+    uint16_t mmss = _node.getResponseBuffer(2);
+    uint16_t ms = _node.getResponseBuffer(3);
+    syncData.time.year = yymm & 0xFF;
+    syncData.time.month = yymm >> 8;
+    syncData.time.day = ddhh & 0xFF;
+    syncData.time.hour = ddhh >> 8;
+    syncData.time.minute = mmss & 0xFF;
+    syncData.time.second = mmss >> 8;
+    syncData.time.millisecond = ms;
+    syncData.time.isDataValid = true;
+
+    // Phân tích dữ liệu Gia tốc (3 words, offset 4)
+    uint16_t rawAX = _node.getResponseBuffer(4);
+    uint16_t rawAY = _node.getResponseBuffer(5);
+    uint16_t rawAZ = _node.getResponseBuffer(6);
+    syncData.accel.accelX = static_cast<float>(static_cast<int16_t>(rawAX)) / 32768.0f * 16.0f * GRAVITATIONAL_ACCELERATION;
+    syncData.accel.accelY = static_cast<float>(static_cast<int16_t>(rawAY)) / 32768.0f * 16.0f * GRAVITATIONAL_ACCELERATION;
+    syncData.accel.accelZ = static_cast<float>(static_cast<int16_t>(rawAZ)) / 32768.0f * 16.0f * GRAVITATIONAL_ACCELERATION;
+    syncData.accel.isDataValid = true;
+
+    // Phân tích dữ liệu Vận tốc góc (3 words, offset 7)
+    uint16_t rawGX = _node.getResponseBuffer(7);
+    uint16_t rawGY = _node.getResponseBuffer(8);
+    uint16_t rawGZ = _node.getResponseBuffer(9);
+    syncData.gyro.angularVelX = static_cast<float>(static_cast<int16_t>(rawGX)) / 32768.0f * 2000.0f;
+    syncData.gyro.angularVelY = static_cast<float>(static_cast<int16_t>(rawGY)) / 32768.0f * 2000.0f;
+    syncData.gyro.angularVelZ = static_cast<float>(static_cast<int16_t>(rawGZ)) / 32768.0f * 2000.0f;
+    syncData.gyro.isDataValid = true;
+
+    // Phân tích dữ liệu Từ trường (3 words, offset 10)
+    syncData.mag.fieldX = static_cast<int16_t>(_node.getResponseBuffer(10));
+    syncData.mag.fieldY = static_cast<int16_t>(_node.getResponseBuffer(11));
+    syncData.mag.fieldZ = static_cast<int16_t>(_node.getResponseBuffer(12));
+    syncData.mag.isDataValid = true;
+
+    // Phân tích dữ liệu Góc quay (3 words, offset 13)
+    const double ATTITUDE_SCALING_FACTOR = 100.0;
+    syncData.attitude.roll = static_cast<float>(static_cast<int16_t>(_node.getResponseBuffer(13))) / ATTITUDE_SCALING_FACTOR;
+    syncData.attitude.pitch = static_cast<float>(static_cast<int16_t>(_node.getResponseBuffer(14))) / ATTITUDE_SCALING_FACTOR;
+    syncData.attitude.yaw = static_cast<float>(static_cast<int16_t>(_node.getResponseBuffer(15))) / ATTITUDE_SCALING_FACTOR;
+    syncData.attitude.isDataValid = true;
+
+    syncData.isImuDataValid = true;
+  }
+
+  // --- Đọc dữ liệu Tọa độ GPS ---
+  // Địa chỉ bắt đầu: GPS_COORD_BASE_REGISTER (0x0075)
+  // Số lượng thanh ghi: 4
+  const uint8_t NUM_GPS_COORD_REGISTERS = 4;
+  const double GPS_COORD_SCALING_FACTOR = 10000000.0;
+  uint8_t resultGps = _node.readHoldingRegisters(GPS_COORD_BASE_REGISTER, NUM_GPS_COORD_REGISTERS);
+
+  if (resultGps == _node.ku8MBSuccess)
+  {
+    uint16_t lon_high = _node.getResponseBuffer(0);
+    uint16_t lon_low = _node.getResponseBuffer(1);
+    uint16_t lat_high = _node.getResponseBuffer(2);
+    uint16_t lat_low = _node.getResponseBuffer(3);
+
+    int32_t raw_lon = (static_cast<int32_t>(lon_high) << 16) | lon_low;
+    int32_t raw_lat = (static_cast<int32_t>(lat_high) << 16) | lat_low;
+
+    syncData.gpsCoordinates.longitude = static_cast<double>(raw_lon) / GPS_COORD_SCALING_FACTOR;
+    syncData.gpsCoordinates.latitude = static_cast<double>(raw_lat) / GPS_COORD_SCALING_FACTOR;
+    syncData.gpsCoordinates.isDataValid = true;
+    syncData.isGpsCoordValid = true;
+  }
+
+  return syncData;
 }

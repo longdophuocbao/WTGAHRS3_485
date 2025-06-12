@@ -108,6 +108,20 @@ enum SystemCommand : uint16_t
   CMD_RESET_CONFIG = 0x0001
 };
 
+// --- CẤU TRÚC DỮ LIỆU ĐỒNG BỘ ---
+struct SynchronizedSensorData
+{
+  OnChipTime time;
+  AccelerationData accel;
+  AngularVelocityData gyro;
+  AttitudeData attitude;
+  MagneticFieldData mag; // Được đọc cùng khối IMU
+  GpsCoordinates gpsCoordinates;
+
+  bool isImuDataValid;    // Cờ cho time, accel, gyro, attitude, mag
+  bool isGpsCoordValid; // Cờ cho gpsCoordinates
+};
+
 // --- LỚP THƯ VIỆN CHÍNH ---
 class WTGAHRS3_485
 {
@@ -148,6 +162,9 @@ public:
 
   OnChipTime getOnChipTime();
   bool setOnChipTime(const OnChipTime &newTime);
+
+  // --- HÀM ĐỌC DỮ LIỆU ĐỒNG BỘ ---
+  SynchronizedSensorData getSynchronizedData();
 
   // --- HÀM TIỆN ÍCH ---
   static String bandwidthToString(SensorBandwidth bw);
