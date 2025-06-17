@@ -110,6 +110,19 @@ enum SensorBandwidth : uint16_t
   BW_5_HZ = 0x0006
 };
 
+enum SensorBaudRate : uint16_t
+{
+  BAUD_4800 = 0x01,
+  BAUD_9600 = 0x02,
+  BAUD_19200 = 0x03,
+  BAUD_38400 = 0x04,
+  BAUD_57600 = 0x05,
+  BAUD_115200 = 0x06,
+  BAUD_230400 = 0x07,
+  BAUD_460800 = 0x08,
+  BAUD_921600 = 0x09
+};
+
 enum SystemCommand : uint16_t
 {
   CMD_SAVE_CONFIG = 0x0000,
@@ -120,7 +133,6 @@ enum SystemCommand : uint16_t
 // --- CẤU TRÚC DỮ LIỆU ĐỒNG BỘ ---
 struct SynchronizedSensorData
 {
-  OnChipTime time;
   AccelerationData accel;
   AngularVelocityData gyro;
   AttitudeData attitude;
@@ -129,7 +141,7 @@ struct SynchronizedSensorData
   GpsMotionData gpsMotion;     // Dữ liệu chuyển động GPS
   GpsAccuracyData gpsAccuracy; // Dữ liệu độ chính xác GPS
 
-  bool isImuDataValid;    // Cờ cho time, accel, gyro, attitude, mag
+  bool isImuDataValid;    // Cờ cho accel, gyro, attitude, mag
   bool isGpsCoordValid; // Cờ cho gpsCoordinates
   bool isGpsMotionValid;  // Cờ cho gpsMotion
   bool isGpsAccuracyValid;// Cờ cho gpsAccuracy
@@ -176,6 +188,12 @@ public:
 
   OnChipTime getOnChipTime();
   bool setOnChipTime(const OnChipTime &newTime);
+
+  bool setBaudRate(SensorBaudRate baudCode);
+  SensorBaudRate getBaudRate(bool &isValid);
+
+  // Hàm tiện ích để chuyển đổi mã baud rate sang số long
+  static long baudCodeToLong(SensorBaudRate baudCode);
 
   // --- HÀM ĐỌC DỮ LIỆU ĐỒNG BỘ ---
   SynchronizedSensorData getSynchronizedData();
