@@ -214,6 +214,8 @@ public:
   // --- HÀM TIỆN ÍCH ---
   static String bandwidthToString(SensorBandwidth bw);
 
+  static AttitudeData quaternionToEuler(const QuaternionData &quat);
+
 private:
   ModbusMaster &_node; // Tham chiếu đến đối tượng ModbusMaster
 

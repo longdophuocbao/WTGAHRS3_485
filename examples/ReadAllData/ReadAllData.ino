@@ -137,6 +137,25 @@ void loop()
   {
     Serial.println("Failed to read GPS coordinates.");
   }
+
+  // --- Đọc dữ liệu Quaternion ---
+  QuaternionData quat = sensor.getQuaternionData();
+  if (quat.isDataValid)
+  {
+    Serial.print("Quaternion:    ");
+    Serial.print("q0=");
+    Serial.print(quat.q0, 4);
+    Serial.print(", q1=");
+    Serial.print(quat.q1, 4);
+    Serial.print(", q2=");
+    Serial.print(quat.q2, 4);
+    Serial.print(", q3=");
+    Serial.println(quat.q3, 4);
+  }
+  else
+  {
+    Serial.println("Failed to read quaternion data.");
+  }
   // --- Đọc dữ liệu độ chính xác GPS ---
   GpsAccuracyData accuracy = sensor.getGpsAccuracy();
   if (accuracy.isDataValid)

@@ -540,6 +540,58 @@ String WTGAHRS3_485::bandwidthToString(SensorBandwidth bw)
   }
 }
 
+AttitudeData WTGAHRS3_485::quaternionToEuler(const QuaternionData &quat)
+{
+  AttitudeData euler;
+  euler.isDataValid = false;
+
+  // Kiểm tra xem dữ liệu quaternion đầu vào có hợp lệ không
+  if (!quat.isDataValid)
+  {
+    return euler;
+  }
+
+  // Gán các biến để công thức dễ đọc hơn (w, x, y, z)
+  float q0 = quat.q0; // w
+  float q1 = quat.q1; // x
+  float q2 = quat.q2; // y
+  float q3 = quat.q3; // z
+
+  // Công thức chuyển đổi từ Quaternion sang Euler Angles (kết quả bằng Radian)
+
+  // Roll (góc xoay quanh trục x)
+  float sinr_cosp = 2 * (q0 * q1 + q2 * q3);
+  float cosr_cosp = 1 - 2 * (q1 * q1 + q2 * q2);
+  euler.roll = atan2(sinr_cosp, cosr_cosp);
+
+  // Pitch (góc xoay quanh trục y)
+  float sinp = 2 * (q0 * q2 - q3 * q1);
+  if (abs(sinp) >= 1)
+  {
+    // Sử dụng copysign để xử lý trường hợp pitch = +/- 90 độ (gimbal lock)
+    euler.pitch = copysign(M_PI / 2, sinp);
+  }
+  else
+  {
+    euler.pitch = asin(sinp);
+  }
+
+  // Yaw (góc xoay quanh trục z)
+  float siny_cosp = 2 * (q0 * q3 + q1 * q2);
+  float cosy_cosp = 1 - 2 * (q2 * q2 + q3 * q3);
+  euler.yaw = atan2(siny_cosp, cosy_cosp);
+
+  // Chuyển đổi kết quả từ Radian sang Độ (Degrees)
+  const float rad_to_deg = 180.0 / M_PI;
+  euler.roll *= rad_to_deg;
+  euler.pitch *= rad_to_deg;
+  euler.yaw *= rad_to_deg;
+
+  euler.isDataValid = true;
+
+  return euler;
+}
+
 // --- HÀM ĐỌC DỮ LIỆU ĐỒNG BỘ ---
 SynchronizedSensorData WTGAHRS3_485::getSynchronizedData()
 {
