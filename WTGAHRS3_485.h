@@ -30,6 +30,14 @@ struct GpsAccuracyData
   bool isDataValid;
 };
 
+struct SynchronizedGpsData
+{
+  GpsCoordinates coordinates;
+  GpsMotionData motion;
+  GpsAccuracyData accuracy;
+  bool isDataValid; // Cờ tổng thể cho biết tất cả dữ liệu GPS có hợp lệ không
+};
+
 struct AttitudeData
 {
   float roll;  // Góc xoay quanh trục X
@@ -152,10 +160,10 @@ struct SynchronizedSensorData
   GpsAccuracyData gpsAccuracy; // Dữ liệu độ chính xác GPS
   QuaternionData quaternion;   // Dữ liệu Quaternion
 
-  bool isImuDataValid;    // Cờ cho accel, gyro, attitude, mag
-  bool isGpsCoordValid; // Cờ cho gpsCoordinates
-  bool isGpsMotionValid;  // Cờ cho gpsMotion
-  bool isGpsAccuracyValid;// Cờ cho gpsAccuracy
+  bool isImuDataValid;        // Cờ cho accel, gyro, attitude, mag
+  bool isGpsCoordValid;       // Cờ cho gpsCoordinates
+  bool isGpsMotionValid;      // Cờ cho gpsMotion
+  bool isGpsAccuracyValid;    // Cờ cho gpsAccuracy
   bool isQuaternionDataValid; // Cờ cho quaternion
 };
 
@@ -210,6 +218,10 @@ public:
 
   // --- HÀM ĐỌC DỮ LIỆU ĐỒNG BỘ ---
   SynchronizedSensorData getSynchronizedData();
+
+  SynchronizedGpsData getSynchronizedGpsData();
+
+  
 
   // --- HÀM TIỆN ÍCH ---
   static String bandwidthToString(SensorBandwidth bw);

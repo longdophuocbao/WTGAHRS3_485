@@ -717,3 +717,49 @@ SynchronizedSensorData WTGAHRS3_485::getSynchronizedData()
 
   return syncData;
 }
+
+// --- HÀM ĐỌC DỮ LIỆU ĐỒNG BỘ GPS ---
+SynchronizedGpsData WTGAHRS3_485::getSynchronizedGpsData()
+{
+  SynchronizedGpsData syncGpsData;
+  syncGpsData.isDataValid = false; // Mặc định là không hợp lệ
+
+  // Lệnh đọc 1: Đọc dữ liệu Tọa độ và Chuyển động GPS
+  // Địa chỉ bắt đầu: 0x0049 - 8 thanh ghi (0x49 đến 0x50)
+  // Bao gồm: LonL, LonH, LatL, LatH, GPSHeight, GPSYAW, GPSVL, GPSVH
+  const uint16_t GPS_NAV_START_ADDRESS = 0x0049;
+  const uint8_t NUM_GPS_NAV_REGISTERS = 8;
+  const double GPS_COORD_SCALING_FACTOR = 10000000.0;
+  uint8_t resultGpsNav = _node.readHoldingRegisters(GPS_NAV_START_ADDRESS, NUM_GPS_NAV_REGISTERS);
+
+  if (resultGpsNav == _node.ku8MBSuccess)
+  {
+    // Tọa độ (offset 0 trong buffer này)
+    uint16_t lon_low = _node.getResponseBuffer(0);  // 0x49 LonL
+    uint16_t lon_high = _node.getResponseBuffer(1); // 0x4A LonH
+    uint16_t lat_low = _node.getResponseBuffer(2);  // 0x4B LatL
+    uint16_t lat_high = _node.getResponseBuffer(3); // 0x4C LatH
+    int32_t raw_lon = (static_cast<int32_t>(lon_high) << 16) | lon_low;
+    int32_t raw_lat = (static_cast<int32_t>(lat_high) << 16) | lat_low;
+    syncGpsData.coordinates.longitude = static_cast<double>(raw_lon) / GPS_COORD_SCALING_FACTOR;
+    syncGpsData.coordinates.latitude = static_cast<double>(raw_lat) / GPS_COORD_SCALING_FACTOR;
+    syncGpsData.coordinates.isDataValid = true;
+
+    // Dữ liệu chuyển động GPS (offset 4 trong buffer này)
+    uint16_t rawGPSHeight = _node.getResponseBuffer(4); // 0x4D GPSHeight
+    uint16_t rawGPSYaw = _node.getResponseBuffer(5);    // 0x4E GPSYAW (GPS Heading)
+    uint16_t rawGPSVL = _node.getResponseBuffer(6);     // 0x4F GPSVL (Ground speed low word)
+    uint16_t rawGPSVH = _node.getResponseBuffer(7);     // 0x50 GPSVH (Ground speed high word)
+    syncGpsData.motion.altitude = static_cast<float>(static_cast<int16_t>(rawGPSHeight)) / 10.0f;
+    syncGpsData.motion.heading = static_cast<float>(rawGPSYaw) / 100.0f;
+    uint32_t rawSpeedFull = (static_cast<uint32_t>(rawGPSVH) << 16) | rawGPSVL;
+    syncGpsData.motion.groundSpeed = static_cast<float>(rawSpeedFull) / 1000.0f; // km/h
+    syncGpsData.motion.isDataValid = true;
+  }
+
+  // Lệnh đọc 2: Đọc dữ liệu Chất lượng GPS
+  syncGpsData.accuracy = getGpsAccuracy(); // Sử dụng hàm đã có
+
+  syncGpsData.isDataValid = syncGpsData.coordinates.isDataValid && syncGpsData.motion.isDataValid && syncGpsData.accuracy.isDataValid;
+  return syncGpsData;
+}
