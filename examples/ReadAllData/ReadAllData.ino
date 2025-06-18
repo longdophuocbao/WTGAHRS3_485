@@ -56,7 +56,7 @@ void loop()
     Serial.println("Failed to read attitude data.");
   }
 
-  // --- Read Acceleration ---
+  // --- Đọc dữ liệu gia tốc ---
   AccelerationData accel = sensor.getAccelerationData();
   if (accel.isDataValid)
   {
@@ -73,7 +73,7 @@ void loop()
     Serial.println("Failed to read acceleration data.");
   }
 
-  // --- Read Angular Velocity ---
+  // --- Đọc vận tốc góc ---
   AngularVelocityData gyro = sensor.getAngularVelocityData();
   if (gyro.isDataValid)
   {
@@ -90,7 +90,7 @@ void loop()
     Serial.println("Failed to read angular velocity data.");
   }
 
-  // --- Read Magnetic Field ---
+  // --- Đọc từ trường ---
   MagneticFieldData mag = sensor.getMagneticFieldData();
   if (mag.isDataValid)
   {
@@ -107,7 +107,7 @@ void loop()
     Serial.println("Failed to read magnetic field data.");
   }
 
-  // --- Read GPS Motion Data ---
+  // --- Đọc dữ liệu chuyển động GPS ---
   GpsMotionData gps = sensor.getGpsMotionData();
   if (gps.isDataValid)
   {
@@ -124,7 +124,7 @@ void loop()
     Serial.println("Failed to read GPS motion data.");
   }
 
-  GpsCoordinates coords = sensor.getGpsCoordinates();
+  GpsCoordinates coords = sensor.getGpsCoordinates(); // Đọc tọa độ GPS
   if (coords.isDataValid)
   {
     Serial.print("GPS Coords:    ");
@@ -136,6 +136,103 @@ void loop()
   else
   {
     Serial.println("Failed to read GPS coordinates.");
+  }
+  // --- Đọc dữ liệu độ chính xác GPS ---
+  GpsAccuracyData accuracy = sensor.getGpsAccuracy();
+  if (accuracy.isDataValid)
+  {
+    Serial.print("GPS Accuracy:  ");
+    Serial.print("Sats=");
+    Serial.print(accuracy.numSatellites);
+    Serial.print(", PDOP=");
+    Serial.print(accuracy.pdop, 2);
+    Serial.print(", HDOP=");
+    Serial.print(accuracy.hdop, 2);
+    Serial.print(", VDOP=");
+    Serial.println(accuracy.vdop, 2);
+  }
+  else
+  {
+    Serial.println("Failed to read GPS accuracy data.");
+  }
+
+  // --- Đọc thời gian chip ---
+  OnChipTime chipTime = sensor.getOnChipTime();
+  if (chipTime.isDataValid)
+  {
+    Serial.print("Chip Time:     ");
+    Serial.print(chipTime.year, DEC);
+    Serial.print("/");
+    Serial.print(chipTime.month, DEC);
+    Serial.print("/");
+    Serial.print(chipTime.day, DEC);
+    Serial.print(" ");
+    Serial.print(chipTime.hour, DEC);
+    Serial.print(":");
+    Serial.print(chipTime.minute, DEC);
+    Serial.print(":");
+    Serial.print(chipTime.second, DEC);
+    Serial.print(".");
+    Serial.println(chipTime.millisecond, DEC);
+  }
+  else
+  {
+    Serial.println("Failed to read chip time.");
+  }
+  // --- Đọc trạng thái công tắc hiệu chuẩn ---
+  bool calibSwitchValid;
+  uint16_t calibSwitchStatus = sensor.getCalibrationSwitchStatus(calibSwitchValid);
+  if (calibSwitchValid)
+  {
+    Serial.print("Calibration Switch Status: 0x");
+    Serial.println(calibSwitchStatus, HEX);
+  }
+  else
+  {
+    Serial.println("Failed to read calibration switch status.");
+  }
+
+  // --- Đọc độ trễ phản hồi dữ liệu ---
+  bool delayValid;
+  uint16_t dataDelay = sensor.getDataResponseDelay(delayValid);
+  if (delayValid)
+  {
+    Serial.print("Data Response Delay: ");
+    Serial.print(dataDelay);
+    Serial.println(" us");
+  }
+  else
+  {
+    Serial.println("Failed to read data response delay.");
+  }
+
+  // --- Đọc tất cả các offset cảm biến ---
+  bool offsetsValid;
+  SensorOffsets offsets = sensor.getAllSensorOffsets(offsetsValid);
+  if (offsetsValid)
+  {
+    Serial.println("Sensor Offsets:");
+    Serial.print("  Accel: X=");
+    Serial.print(offsets.accelOffsetX_g, 4);
+    Serial.print(" g, Y=");
+    Serial.print(offsets.accelOffsetY_g, 4);
+    Serial.print(" g, Z=");
+    Serial.print(offsets.accelOffsetZ_g, 4);
+    Serial.println(" g");
+    Serial.print("  Gyro:  X=");
+    Serial.print(offsets.angularVelOffsetX_dps, 4);
+    Serial.print(" dps, Y=");
+    Serial.print(offsets.angularVelOffsetY_dps, 4);
+    Serial.print(" dps, Z=");
+    Serial.print(offsets.angularVelOffsetZ_dps, 4);
+    Serial.println(" dps");
+    Serial.print("  Mag:   X=");
+    Serial.print(offsets.magOffsetX_LSB);
+    Serial.print(" LSB, Y=");
+    Serial.print(offsets.magOffsetY_LSB);
+    Serial.print(" LSB, Z=");
+    Serial.print(offsets.magOffsetZ_LSB);
+    Serial.println(" LSB");
   }
 
   Serial.println("------------------------------------");

@@ -13,6 +13,7 @@ const uint16_t ANGULAR_VELOCITY_BASE_REGISTER = 0x0037;
 const uint16_t MAGNETIC_FIELD_BASE_REGISTER = 0x003A;
 const uint16_t ATTITUDE_BASE_REGISTER = 0x003D;
 const uint16_t GPS_MOTION_BASE_REGISTER = 0x004D;
+const uint16_t QUATERNION_BASE_REGISTER = 0x0051;
 const uint16_t GPS_ACCURACY_BASE_REGISTER = 0x0055;
 const uint16_t KEY_REGISTER_ADDRESS = 0x0069;
 const uint16_t MODDELAY_REGISTER_ADDRESS = 0x0074;
@@ -173,6 +174,34 @@ GpsMotionData WTGAHRS3_485::getGpsMotionData()
     motionData.isDataValid = true;
   }
   return motionData;
+}
+
+QuaternionData WTGAHRS3_485::getQuaternionData()
+{
+  QuaternionData quatData;
+  quatData.isDataValid = false;
+
+  const uint8_t NUM_REGISTERS = 4;
+  uint8_t result = _node.readHoldingRegisters(QUATERNION_BASE_REGISTER, NUM_REGISTERS);
+
+  if (result == _node.ku8MBSuccess)
+  {
+    // Đọc giá trị thô từ bộ đệm
+    int16_t raw_q0 = static_cast<int16_t>(_node.getResponseBuffer(0));
+    int16_t raw_q1 = static_cast<int16_t>(_node.getResponseBuffer(1));
+    int16_t raw_q2 = static_cast<int16_t>(_node.getResponseBuffer(2));
+    int16_t raw_q3 = static_cast<int16_t>(_node.getResponseBuffer(3));
+
+    // Áp dụng công thức chuyển đổi
+    quatData.q0 = static_cast<float>(raw_q0) / 32768.0f;
+    quatData.q1 = static_cast<float>(raw_q1) / 32768.0f;
+    quatData.q2 = static_cast<float>(raw_q2) / 32768.0f;
+    quatData.q3 = static_cast<float>(raw_q3) / 32768.0f;
+
+    quatData.isDataValid = true;
+  }
+
+  return quatData;
 }
 
 GpsCoordinates WTGAHRS3_485::getGpsCoordinates()
@@ -519,6 +548,7 @@ SynchronizedSensorData WTGAHRS3_485::getSynchronizedData()
   syncData.isGpsCoordValid = false;
   syncData.isGpsMotionValid = false;
   syncData.isGpsAccuracyValid = false;
+  syncData.isQuaternionDataValid = false;
 
   // --- Lệnh đọc 1: Đọc dữ liệu Thời gian, IMU & Góc ---
   // Địa chỉ bắt đầu cho IMU & Góc: ACCELERATION_BASE_REGISTER (0x0034)
@@ -565,14 +595,14 @@ SynchronizedSensorData WTGAHRS3_485::getSynchronizedData()
 
 
   // --- Lệnh đọc 2: Đọc dữ liệu Định vị GPS ---
-  // Địa chỉ bắt đầu: 0x0049 - 8 thanh ghi (0x49 đến 0x50)
-  // Bao gồm: LonL, LonH, LatL, LatH, GPSHeight, GPSYAW, GPSVL, GPSVH
-  const uint16_t GPS_NAV_START_ADDRESS = 0x0049;
-  const uint8_t NUM_GPS_NAV_REGISTERS = 8;
-  const double GPS_COORD_SCALING_FACTOR = 10000000.0;
-  uint8_t resultGpsNav = _node.readHoldingRegisters(GPS_NAV_START_ADDRESS, NUM_GPS_NAV_REGISTERS);
+  // Địa chỉ bắt đầu: 0x0049 - 12 thanh ghi (0x49 đến 0x50)
 
-  if (resultGpsNav == _node.ku8MBSuccess)
+  const uint16_t GPS_NAV_QUAT_START_ADDRESS = 0x0049; // Địa chỉ bắt đầu không đổi
+  const uint8_t NUM_GPS_NAV_QUAT_REGISTERS = 12;      // 4 (Coords) + 4 (Motion) + 4 (Quaternion)
+  const double GPS_COORD_SCALING_FACTOR = 10000000.0;
+  uint8_t resultGpsNavQuat = _node.readHoldingRegisters(GPS_NAV_QUAT_START_ADDRESS, NUM_GPS_NAV_QUAT_REGISTERS);
+
+  if (resultGpsNavQuat == _node.ku8MBSuccess)
   {
     // Tọa độ (offset 0 trong buffer này)
     uint16_t lon_low = _node.getResponseBuffer(0);  // 0x49 LonL
@@ -601,6 +631,19 @@ SynchronizedSensorData WTGAHRS3_485::getSynchronizedData()
     syncData.gpsMotion.groundSpeed = static_cast<float>(rawSpeedFull) / 1000.0f; // km/h
     syncData.gpsMotion.isDataValid = true;
     syncData.isGpsMotionValid = true;
+
+    // Dữ liệu Quaternion (offset 8 trong buffer này)
+    int16_t raw_q0 = static_cast<int16_t>(_node.getResponseBuffer(8));  // 0x51
+    int16_t raw_q1 = static_cast<int16_t>(_node.getResponseBuffer(9));  // 0x52
+    int16_t raw_q2 = static_cast<int16_t>(_node.getResponseBuffer(10)); // 0x53
+    int16_t raw_q3 = static_cast<int16_t>(_node.getResponseBuffer(11)); // 0x54
+
+    syncData.quaternion.q0 = static_cast<float>(raw_q0) / 32768.0f;
+    syncData.quaternion.q1 = static_cast<float>(raw_q1) / 32768.0f;
+    syncData.quaternion.q2 = static_cast<float>(raw_q2) / 32768.0f;
+    syncData.quaternion.q3 = static_cast<float>(raw_q3) / 32768.0f;
+    syncData.quaternion.isDataValid = true;
+    syncData.isQuaternionDataValid = true;
   }
 
 

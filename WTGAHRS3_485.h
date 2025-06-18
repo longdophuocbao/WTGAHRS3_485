@@ -87,6 +87,16 @@ struct SensorOffsets
   int16_t magOffsetZ_LSB;
 };
 
+// Thêm cấu trúc này vào phần CÁC CẤU TRÚC DỮ LIỆU
+struct QuaternionData
+{
+  float q0; // Thành phần vô hướng (w)
+  float q1; // Thành phần vector (x)
+  float q2; // Thành phần vector (y)
+  float q3; // Thành phần vector (z)
+  bool isDataValid;
+};
+
 // --- CÁC ENUM CHO LỆNH VÀ CÀI ĐẶT ---
 enum CalibrationCommand : uint16_t
 {
@@ -140,11 +150,13 @@ struct SynchronizedSensorData
   GpsCoordinates gpsCoordinates;
   GpsMotionData gpsMotion;     // Dữ liệu chuyển động GPS
   GpsAccuracyData gpsAccuracy; // Dữ liệu độ chính xác GPS
+  QuaternionData quaternion;   // Dữ liệu Quaternion
 
   bool isImuDataValid;    // Cờ cho accel, gyro, attitude, mag
   bool isGpsCoordValid; // Cờ cho gpsCoordinates
   bool isGpsMotionValid;  // Cờ cho gpsMotion
   bool isGpsAccuracyValid;// Cờ cho gpsAccuracy
+  bool isQuaternionDataValid; // Cờ cho quaternion
 };
 
 // --- LỚP THƯ VIỆN CHÍNH ---
@@ -162,6 +174,7 @@ public:
   AccelerationData getAccelerationData();
   AngularVelocityData getAngularVelocityData();
   MagneticFieldData getMagneticFieldData();
+  QuaternionData getQuaternionData();
 
   // --- CÁC HÀM CẤU HÌNH VÀ ĐIỀU KHIỂN ---
   bool setCalibrationCommand(CalibrationCommand command);
