@@ -763,3 +763,53 @@ SynchronizedGpsData WTGAHRS3_485::getSynchronizedGpsData()
   syncGpsData.isDataValid = syncGpsData.coordinates.isDataValid && syncGpsData.motion.isDataValid && syncGpsData.accuracy.isDataValid;
   return syncGpsData;
 }
+
+SynchronizedImuAttitudeData WTGAHRS3_485::getSynchronizedImuAttitudeData()
+{
+  SynchronizedImuAttitudeData imuAttData;
+  imuAttData.isDataValid = false; // Mặc định là không hợp lệ
+
+  // Đọc khối dữ liệu IMU và Attitude
+  // Địa chỉ bắt đầu: ACCELERATION_BASE_REGISTER (0x0034)
+  // Số thanh ghi: 3 (Accel) + 3 (Gyro) + 3 (Mag) + 3 (Attitude) = 12 thanh ghi
+  const uint16_t IMU_ATT_START_ADDRESS = ACCELERATION_BASE_REGISTER;
+  const uint8_t NUM_IMU_ATT_REGISTERS = 12;
+  uint8_t result = _node.readHoldingRegisters(IMU_ATT_START_ADDRESS, NUM_IMU_ATT_REGISTERS);
+
+  if (result == _node.ku8MBSuccess)
+  {
+    // Phân tích dữ liệu Gia tốc (offset 0)
+    uint16_t rawAX = _node.getResponseBuffer(0);
+    uint16_t rawAY = _node.getResponseBuffer(1);
+    uint16_t rawAZ = _node.getResponseBuffer(2);
+    imuAttData.accel.accelX = static_cast<float>(static_cast<int16_t>(rawAX)) / 32768.0f * 16.0f * GRAVITATIONAL_ACCELERATION;
+    imuAttData.accel.accelY = static_cast<float>(static_cast<int16_t>(rawAY)) / 32768.0f * 16.0f * GRAVITATIONAL_ACCELERATION;
+    imuAttData.accel.accelZ = static_cast<float>(static_cast<int16_t>(rawAZ)) / 32768.0f * 16.0f * GRAVITATIONAL_ACCELERATION;
+    imuAttData.accel.isDataValid = true;
+
+    // Phân tích dữ liệu Vận tốc góc (offset 3)
+    uint16_t rawGX = _node.getResponseBuffer(3);
+    uint16_t rawGY = _node.getResponseBuffer(4);
+    uint16_t rawGZ = _node.getResponseBuffer(5);
+    imuAttData.gyro.angularVelX = static_cast<float>(static_cast<int16_t>(rawGX)) / 32768.0f * 2000.0f;
+    imuAttData.gyro.angularVelY = static_cast<float>(static_cast<int16_t>(rawGY)) / 32768.0f * 2000.0f;
+    imuAttData.gyro.angularVelZ = static_cast<float>(static_cast<int16_t>(rawGZ)) / 32768.0f * 2000.0f;
+    imuAttData.gyro.isDataValid = true;
+
+    // Phân tích dữ liệu Từ trường (offset 6)
+    imuAttData.mag.fieldX = static_cast<int16_t>(_node.getResponseBuffer(6));
+    imuAttData.mag.fieldY = static_cast<int16_t>(_node.getResponseBuffer(7));
+    imuAttData.mag.fieldZ = static_cast<int16_t>(_node.getResponseBuffer(8));
+    imuAttData.mag.isDataValid = true;
+
+    // Phân tích dữ liệu Góc quay (offset 9)
+    const double ATTITUDE_SCALING_FACTOR = 100.0;
+    imuAttData.attitude.roll = static_cast<float>(static_cast<int16_t>(_node.getResponseBuffer(9))) / ATTITUDE_SCALING_FACTOR;
+    imuAttData.attitude.pitch = static_cast<float>(static_cast<int16_t>(_node.getResponseBuffer(10))) / ATTITUDE_SCALING_FACTOR;
+    imuAttData.attitude.yaw = static_cast<float>(static_cast<int16_t>(_node.getResponseBuffer(11))) / ATTITUDE_SCALING_FACTOR;
+    imuAttData.attitude.isDataValid = true;
+
+    imuAttData.isDataValid = imuAttData.accel.isDataValid && imuAttData.gyro.isDataValid && imuAttData.mag.isDataValid && imuAttData.attitude.isDataValid;
+  }
+  return imuAttData;
+}

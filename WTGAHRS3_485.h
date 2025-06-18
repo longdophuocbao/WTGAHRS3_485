@@ -167,13 +167,22 @@ struct SynchronizedSensorData
   bool isQuaternionDataValid; // Cờ cho quaternion
 };
 
+// Thêm cấu trúc này để chứa dữ liệu IMU và Attitude đồng bộ
+struct SynchronizedImuAttitudeData
+{
+  AccelerationData accel;
+  AngularVelocityData gyro;
+  MagneticFieldData mag;
+  AttitudeData attitude;
+  bool isDataValid; // Cờ tổng thể cho biết tất cả dữ liệu IMU & Attitude có hợp lệ không
+};
+
 // --- LỚP THƯ VIỆN CHÍNH ---
 class WTGAHRS3_485
 {
 public:
   // Constructor: nhận một tham chiếu đến đối tượng ModbusMaster đã được khởi tạo
   WTGAHRS3_485(ModbusMaster &node);
-
   // --- CÁC HÀM ĐỌC DỮ LIỆU CẢM BIẾN ---
   GpsMotionData getGpsMotionData();
   GpsCoordinates getGpsCoordinates();
@@ -183,7 +192,6 @@ public:
   AngularVelocityData getAngularVelocityData();
   MagneticFieldData getMagneticFieldData();
   QuaternionData getQuaternionData();
-
   // --- CÁC HÀM CẤU HÌNH VÀ ĐIỀU KHIỂN ---
   bool setCalibrationCommand(CalibrationCommand command);
   uint16_t getCalibrationSwitchStatus(bool &isValid);
@@ -193,15 +201,12 @@ public:
 
   bool setDataResponseDelay(uint16_t delay_us);
   uint16_t getDataResponseDelay(bool &isValid);
-
   // --- CÁC HÀM QUẢN LÝ OFFSET ---
   bool setAccelOffset(uint8_t axis, float offset_g);   // 0=X, 1=Y, 2=Z
   bool setGyroOffset(uint8_t axis, float offset_dps);  // 0=X, 1=Y, 2=Z
   bool setMagOffset(uint8_t axis, int16_t offset_LSB); // 0=X, 1=Y, 2=Z
-
   SensorOffsets getAllSensorOffsets(bool &allReadsValid);
   bool writeAllSensorOffsets(const SensorOffsets &offsets);
-
   // --- CÁC HÀM HỆ THỐNG QUAN TRỌNG ---
   bool saveConfiguration();
   bool rebootDevice();
@@ -212,14 +217,13 @@ public:
 
   bool setBaudRate(SensorBaudRate baudCode);
   SensorBaudRate getBaudRate(bool &isValid);
-
   // Hàm tiện ích để chuyển đổi mã baud rate sang số long
   static long baudCodeToLong(SensorBaudRate baudCode);
-
   // --- HÀM ĐỌC DỮ LIỆU ĐỒNG BỘ ---
   SynchronizedSensorData getSynchronizedData();
-
   SynchronizedGpsData getSynchronizedGpsData();
+  // Hàm đọc đồng bộ dữ liệu IMU (Accel, Gyro, Mag) và Attitude
+  SynchronizedImuAttitudeData getSynchronizedImuAttitudeData();
 
   
 
