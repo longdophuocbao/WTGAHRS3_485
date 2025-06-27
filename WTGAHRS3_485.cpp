@@ -270,7 +270,7 @@ AttitudeData WTGAHRS3_485::getAttitudeValues()
 
   
   const uint8_t NUM_REGISTERS_TO_READ = 3;        // (1 cho Roll, 1 cho Pitch, 1 cho Yaw)
-  const double SCALING_FACTOR = 100.0;           
+         
 
   uint8_t result = _node.readHoldingRegisters(ATTITUDE_BASE_REGISTER, NUM_REGISTERS_TO_READ);
 
@@ -282,9 +282,9 @@ AttitudeData WTGAHRS3_485::getAttitudeValues()
     int16_t raw_yaw = static_cast<int16_t>(_node.getResponseBuffer(2));
 
     // Áp dụng công thức chuyển đổi
-    attitude.roll = static_cast<float>(raw_roll) / SCALING_FACTOR;
-    attitude.pitch = static_cast<float>(raw_pitch) / SCALING_FACTOR;
-    attitude.yaw = static_cast<float>(raw_yaw) / SCALING_FACTOR;
+    attitude.roll = static_cast<float>(raw_roll) /  32768.0f * 180.0f;
+    attitude.pitch = static_cast<float>(raw_pitch) / 32768.0f * 180.0f;
+    attitude.yaw = static_cast<float>(raw_yaw) / 32768.0f * 180.0f;
 
     attitude.isDataValid = true;
   }
@@ -803,10 +803,10 @@ SynchronizedImuAttitudeData WTGAHRS3_485::getSynchronizedImuAttitudeData()
     imuAttData.mag.isDataValid = true;
 
     // Phân tích dữ liệu Góc quay (offset 9)
-    const double ATTITUDE_SCALING_FACTOR = 100.0;
-    imuAttData.attitude.roll = static_cast<float>(static_cast<int16_t>(_node.getResponseBuffer(9))) / ATTITUDE_SCALING_FACTOR;
-    imuAttData.attitude.pitch = static_cast<float>(static_cast<int16_t>(_node.getResponseBuffer(10))) / ATTITUDE_SCALING_FACTOR;
-    imuAttData.attitude.yaw = static_cast<float>(static_cast<int16_t>(_node.getResponseBuffer(11))) / ATTITUDE_SCALING_FACTOR;
+    
+    imuAttData.attitude.roll = static_cast<float>(static_cast<int16_t>(_node.getResponseBuffer(9))) / 32768.0f * 180.0f;
+    imuAttData.attitude.pitch = static_cast<float>(static_cast<int16_t>(_node.getResponseBuffer(10))) / 32768.0f * 180.0f;
+    imuAttData.attitude.yaw = static_cast<float>(static_cast<int16_t>(_node.getResponseBuffer(11))) / 32768.0f * 180.0f;
     imuAttData.attitude.isDataValid = true;
 
     imuAttData.isDataValid = imuAttData.accel.isDataValid && imuAttData.gyro.isDataValid && imuAttData.mag.isDataValid && imuAttData.attitude.isDataValid;
